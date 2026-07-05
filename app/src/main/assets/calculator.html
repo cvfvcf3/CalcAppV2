@@ -1,1 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Calculator</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,'Helvetica Neue',sans-serif;}
 
+  .wrap{display:flex;flex-direction:column;width:100vw;height:100vh;position:relative;}
+
+  /* TOP BAR */
+  .topbar{display:flex;gap:8px;padding:10px 12px 6px;flex-shrink:0;}
+  .mode-btn{flex:1;background:rgba(247,201,72,0.15);border:1px solid #F7C948;color:#F7C948;font-size:13px;padding:7px 0;border-radius:20px;cursor:pointer;text-align:center;}
+  .mode-btn.active{background:#F7C948;color:#000;font-weight:700;}
+  .hist-btn{background:rgba(255,255,255,0.08);border:1px solid #444;color:#aaa;font-size:13px;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;}
+  .hist-btn.active{border-color:#F7C948;color:#F7C948;}
+
+  /* HISTORY - full screen overlay */
+  .hist-screen{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#000;z-index:20;flex-direction:column;padding:0;}
+  .hist-screen.show{display:flex;}
+  .hist-topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px solid #222;}
+  .hist-heading{color:#fff;font-size:17px;font-weight:600;}
+  .hist-close{color:#F7C948;font-size:15px;cursor:pointer;padding:4px 10px;border:1px solid #F7C948;border-radius:16px;}
+  .hist-actions{display:flex;align-items:center;gap:12px;}
+  .hist-clear-btn{color:#F7C948;font-size:13px;cursor:pointer;}
+  .hist-list{flex:1;overflow-y:auto;padding:8px 16px;}
+  .hist-item{padding:12px 0;border-bottom:1px solid #1a1a1a;cursor:pointer;text-align:right;}
+  .hist-item:last-child{border:none;}
+  .hist-item:active{opacity:0.6;}
+  .hist-expr{color:#555;font-size:14px;margin-bottom:3px;}
+  .hist-res{color:#fff;font-size:24px;font-weight:300;}
+  .hist-empty{color:#444;font-size:16px;text-align:center;padding:60px 0;}
+  .hist-hint{color:#333;font-size:12px;text-align:center;padding:12px 0;}
+
+  /* CALCULATOR */
+  .calc-screen{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+
+  /* DISPLAY */
+  .display{flex-shrink:0;padding:6px 14px 10px;text-align:right;}
+  .expr-line{color:#555;font-size:17px;min-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .result-line{color:#fff;font-size:64px;font-weight:200;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .result-line.sm{font-size:46px;}
+  .result-line.xs{font-size:32px;}
+
+  /* BUTTONS */
+  .buttons{flex:1;display:grid;padding:4px 10px 14px;gap:9px;}
+  .basic-mode{grid-template-columns:repeat(4,1fr);}
+  .sci-mode{grid-template-columns:repeat(5,1fr);}
+
+  .btn{border:none;border-radius:50%;font-size:22px;font-weight:400;color:#fff;cursor:pointer;width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transition:filter 0.1s,transform 0.08s;}
+  .btn:active{filter:brightness(1.6);transform:scale(0.91);}
+  .btn-num{background:#333;}
+  .btn-fn{background:#a5a5a5;color:#000;font-size:17px;}
+  .btn-op{background:#F7C948;color:#000;font-weight:700;}
+  .btn-sci{background:#1c1c1e;border:1px solid #3a3a3a;color:#F7C948;font-size:13px;border-radius:12px;}
+  .btn-op.active{background:#fff;color:#F7C948;}
+
+  .btn-zero{border-radius:40px;grid-column:span 2;aspect-ratio:unset;justify-content:flex-start;padding-left:22px;font-size:24px;}
+
+  .sci-only{display:none;}
+  .sci-mode .sci-only{display:flex;}
+  .sci-mode .btn{font-size:17px;border-radius:14px;}
+  .sci-mode .btn-zero{border-radius:28px;padding-left:16px;font-size:17px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="mode-btn active" id="btnBasic" onclick="setMode('basic')">Basic</div>
+    <div class="mode-btn" id="btnSci" onclick="setMode('sci')">Scientific</div>
+    <div class="hist-btn" id="histToggle" onclick="openHistory()">⏱ History</div>
+  </div>
+
+  <!-- HISTORY FULL SCREEN -->
+  <div class="hist-screen" id="histScreen">
+    <div class="hist-topbar">
+      <span class="hist-heading">History</span>
+      <div class="hist-actions">
+        <span class="hist-clear-btn" onclick="clearHistory()">Clear All</span>
+        <span class="hist-close" onclick="closeHistory()">✕ Close</span>
+      </div>
+    </div>
+    <div class="hist-list" id="histList">
+      <div class="hist-empty">No history yet</div>
+    </div>
+    <div class="hist-hint">Tap any result to use it</div>
+  </div>
+
+  <!-- CALCULATOR SCREEN -->
+  <div class="calc-screen" id="calcScreen">
+
+    <!-- DISPLAY -->
+    <div class="display">
+      <div class="expr-line" id="exprLine"></div>
+      <div class="result-line" id="resultLine">0</div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons basic-mode" id="btnGrid">
+
+      <!-- Sci row 1 -->
+      <button class="btn btn-sci sci-only" onclick="pressSci('sin')">sin</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('cos')">cos</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('tan')">tan</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('log')">log</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('ln')">ln</button>
+
+      <!-- Sci row 2 -->
+      <button class="btn btn-sci sci-only" onclick="pressSci('sqrt')">√</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('sq')">x²</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('pow')">xʸ</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('pi')">π</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('e')">e</button>
+
+      <!-- Row 1 -->
+      <button class="btn btn-fn" id="acBtn" onclick="pressAC()">AC</button>
+      <button class="btn btn-fn" onclick="pressToggle()">+/-</button>
+      <button class="btn btn-fn" onclick="pressPercent()">%</button>
+      <button class="btn btn-op" id="opDiv" onclick="pressOp('÷')">÷</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('inv')">1/x</button>
+
+      <!-- Row 2 -->
+      <button class="btn btn-num" onclick="pressNum('7')">7</button>
+      <button class="btn btn-num" onclick="pressNum('8')">8</button>
+      <button class="btn btn-num" onclick="pressNum('9')">9</button>
+      <button class="btn btn-op" id="opMul" onclick="pressOp('×')">×</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('fact')">n!</button>
+
+      <!-- Row 3 -->
+      <button class="btn btn-num" onclick="pressNum('4')">4</button>
+      <button class="btn btn-num" onclick="pressNum('5')">5</button>
+      <button class="btn btn-num" onclick="pressNum('6')">6</button>
+      <button class="btn btn-op" id="opSub" onclick="pressOp('−')">−</button>
+      <button class="btn btn-sci sci-only" onclick="pressSci('abs')">|x|</button>
+
+      <!-- Row 4 -->
+      <button class="btn btn-num" onclick="pressNum('1')">1</button>
+      <button class="btn btn-num" onclick="pressNum('2')">2</button>
+      <button class="btn btn-num" onclick="pressNum('3')">3</button>
+      <button class="btn btn-op" id="opAdd" onclick="pressOp('+')">+</button>
+      <button class="btn btn-sci sci-only" onclick="pressDel()">⌫</button>
+
+      <!-- Row 5 -->
+      <button class="btn btn-num btn-zero" onclick="pressNum('0')">0</button>
+      <button class="btn btn-num" onclick="pressDot()">.</button>
+      <button class="btn btn-op" onclick="pressEquals()">=</button>
+      <button class="btn btn-sci sci-only" style="visibility:hidden"></button>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let current='0',firstOp=null,pendingOp=null,justEvaled=false,powPending=false;
+let history=[];
+try{history=JSON.parse(localStorage.getItem('ch')||'[]');}catch(e){}
+
+const resultEl=document.getElementById('resultLine');
+const exprEl=document.getElementById('exprLine');
+const acBtn=document.getElementById('acBtn');
+const opIds={'÷':'opDiv','×':'opMul','−':'opSub','+':'opAdd'};
+
+// MODE
+function setMode(m){
+  document.getElementById('btnBasic').classList.toggle('active',m==='basic');
+  document.getElementById('btnSci').classList.toggle('active',m==='sci');
+  document.getElementById('btnGrid').className='buttons '+(m==='sci'?'sci-mode':'basic-mode');
+}
+
+// HISTORY
+function openHistory(){
+  document.getElementById('histScreen').classList.add('show');
+  document.getElementById('histToggle').classList.add('active');
+  renderHistory();
+}
+function closeHistory(){
+  document.getElementById('histScreen').classList.remove('show');
+  document.getElementById('histToggle').classList.remove('active');
+}
+function renderHistory(){
+  const list=document.getElementById('histList');
+  if(!history.length){list.innerHTML='<div class="hist-empty">No history yet</div>';return;}
+  list.innerHTML=history.slice().reverse().map((h,i)=>
+    `<div class="hist-item" onclick="useHistory(${history.length-1-i})">
+      <div class="hist-expr">${h.expr}</div>
+      <div class="hist-res">${h.result}</div>
+    </div>`).join('');
+}
+function addHistory(expr,result){
+  history.push({expr,result});
+  if(history.length>50)history.shift();
+  try{localStorage.setItem('ch',JSON.stringify(history));}catch(e){}
+}
+function clearHistory(){
+  history=[];
+  try{localStorage.removeItem('ch');}catch(e){}
+  renderHistory();
+}
+function useHistory(i){
+  current=history[i].result;
+  justEvaled=true;
+  updateDisplay();
+  closeHistory();
+}
+
+// DISPLAY
+function updateDisplay(expr){
+  resultEl.textContent=current;
+  const l=current.length;
+  resultEl.className='result-line'+(l>10?' xs':l>7?' sm':'');
+  if(expr!==undefined)exprEl.textContent=expr;
+  acBtn.textContent=(current!=='0'||firstOp!==null)?'C':'AC';
+  Object.entries(opIds).forEach(([op,id])=>{
+    document.getElementById(id).classList.toggle('active',pendingOp===op&&!justEvaled);
+  });
+}
+
+// INPUT
+function pressNum(d){
+  if(justEvaled){current=d;justEvaled=false;}
+  else current=current==='0'?d:current+d;
+  updateDisplay();
+}
+function pressDot(){
+  if(justEvaled){current='0.';justEvaled=false;}
+  else if(!current.includes('.'))current+='.';
+  updateDisplay();
+}
+function pressDel(){
+  current=current.length>1?current.slice(0,-1):'0';
+  updateDisplay();
+}
+function pressAC(){
+  current='0';firstOp=null;pendingOp=null;justEvaled=false;powPending=false;
+  updateDisplay('');
+}
+function pressToggle(){
+  const v=parseFloat(current);
+  if(v!==0)current=fmt(-v);
+  updateDisplay();
+}
+function pressPercent(){
+  current=fmt(parseFloat(current)/100);
+  updateDisplay();
+}
+
+// OPERATORS
+function pressOp(op){
+  justEvaled=false;
+  if(firstOp!==null&&pendingOp&&!powPending){
+    firstOp=compute(firstOp,parseFloat(current),pendingOp);
+    current=fmt(firstOp);
+  }else{firstOp=parseFloat(current);}
+  pendingOp=op;powPending=false;
+  exprEl.textContent=fmt(firstOp)+' '+op;
+  justEvaled=true;
+  updateDisplay();
+}
+function pressEquals(){
+  if(firstOp===null||pendingOp===null)return;
+  const b=parseFloat(current);
+  const res=compute(firstOp,b,pendingOp);
+  const expr=fmt(firstOp)+' '+pendingOp+' '+fmt(b)+' =';
+  addHistory(fmt(firstOp)+' '+pendingOp+' '+fmt(b),fmt(res));
+  current=fmt(res);
+  firstOp=null;pendingOp=null;justEvaled=true;powPending=false;
+  updateDisplay(expr);
+}
+
+// SCIENTIFIC
+function pressSci(fn){
+  const v=parseFloat(current);let res;
+  switch(fn){
+    case 'sin':res=Math.sin(v*Math.PI/180);break;
+    case 'cos':res=Math.cos(v*Math.PI/180);break;
+    case 'tan':res=Math.tan(v*Math.PI/180);break;
+    case 'log':res=v>0?Math.log10(v):NaN;break;
+    case 'ln':res=v>0?Math.log(v):NaN;break;
+    case 'sqrt':res=v>=0?Math.sqrt(v):NaN;break;
+    case 'sq':res=v*v;break;
+    case 'pow':firstOp=v;pendingOp='^';powPending=true;exprEl.textContent=fmt(v)+' ^';justEvaled=true;updateDisplay();return;
+    case 'pi':current=fmt(Math.PI);updateDisplay();return;
+    case 'e':current=fmt(Math.E);updateDisplay();return;
+    case 'inv':res=v!==0?1/v:NaN;break;
+    case 'fact':res=factorial(Math.round(v));break;
+    case 'abs':res=Math.abs(v);break;
+    default:return;
+  }
+  addHistory(fn+'('+fmt(v)+')',fmt(res));
+  current=fmt(res);justEvaled=true;
+  updateDisplay(fn+'('+fmt(v)+') =');
+}
+function factorial(n){
+  if(n<0||n>170)return NaN;
+  let r=1;for(let i=2;i<=n;i++)r*=i;return r;
+}
+function compute(a,b,op){
+  switch(op){
+    case '+':return a+b;case '−':return a-b;
+    case '×':return a*b;case '÷':return b!==0?a/b:NaN;
+    case '^':return Math.pow(a,b);
+  }
+}
+function fmt(n){
+  if(isNaN(n)||!isFinite(n))return 'Error';
+  return parseFloat(n.toPrecision(10)).toString();
+}
+
+updateDisplay('');
+</script>
+</body>
+</html>
