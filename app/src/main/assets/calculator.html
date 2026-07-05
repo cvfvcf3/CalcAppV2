@@ -8,10 +8,10 @@
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,'Helvetica Neue',sans-serif;}
 
-  .wrap{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;}
+  .wrap{display:flex;flex-direction:column;width:100%;height:100%;}
 
   /* TOP BAR */
-  .topbar{display:flex;gap:6px;padding:10px 10px 6px;flex-shrink:0;width:100%;}
+  .topbar{display:flex;gap:6px;padding:10px 10px 6px;flex-shrink:0;}
   .mode-btn{flex:1;background:rgba(247,201,72,0.15);border:1px solid #F7C948;color:#F7C948;font-size:13px;padding:7px 0;border-radius:20px;cursor:pointer;text-align:center;}
   .mode-btn.active{background:#F7C948;color:#000;font-weight:700;}
   .hist-btn{background:rgba(255,255,255,0.08);border:1px solid #444;color:#aaa;font-size:13px;padding:7px 12px;border-radius:20px;cursor:pointer;white-space:nowrap;}
@@ -34,83 +34,66 @@
   .hist-hint{color:#333;font-size:12px;text-align:center;padding:10px;flex-shrink:0;}
 
   /* DISPLAY */
-  .display{flex-shrink:0;padding:6px 14px 8px;text-align:right;width:100%;}
-  .expr-line{color:#555;font-size:16px;min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .result-line{color:#fff;font-size:62px;font-weight:200;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .result-line.sm{font-size:44px;}
-  .result-line.xs{font-size:30px;}
+  .display{flex-shrink:0;padding:4px 14px 6px;text-align:right;}
+  .expr-line{color:#555;font-size:15px;min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .result-line{color:#fff;font-size:58px;font-weight:200;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .result-line.sm{font-size:40px;}
+  .result-line.xs{font-size:28px;}
 
   /* BUTTON GRID */
-  .buttons{flex:1;display:grid;padding:4px 8px 10px;width:100%;overflow:hidden;}
-  .basic-mode{grid-template-columns:repeat(4,1fr);gap:8px;}
-  .sci-mode{grid-template-columns:repeat(5,1fr);gap:5px;}
+  .buttons{
+    flex-shrink:0;
+    display:grid;
+    padding:4px 10px 10px;
+    width:100%;
+    gap:var(--gap);
+    grid-template-columns:repeat(4,1fr);
+  }
+  .sci-mode{grid-template-columns:repeat(5,1fr);}
 
-  /* BUTTON BASE - size via vw not aspect-ratio */
+  /* BUTTON - fixed height from JS */
   .btn{
     border:none;
     border-radius:50%;
+    font-size:22px;
     font-weight:400;
     color:#fff;
     cursor:pointer;
     width:100%;
-    height:0;
-    padding-bottom:100%;
-    position:relative;
-    display:block;
-    overflow:hidden;
-  }
-  .btn span{
-    position:absolute;
-    top:0;left:0;right:0;bottom:0;
+    height:var(--bh);
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:22px;
+    transition:filter 0.1s,transform 0.08s;
   }
-  .btn:active{filter:brightness(1.6);}
+  .btn:active{filter:brightness(1.6);transform:scale(0.92);}
 
   .btn-num{background:#333;}
-  .btn-fn{background:#a5a5a5;}
-  .btn-fn span{color:#000;font-size:18px;}
-  .btn-op{background:#F7C948;}
-  .btn-op span{color:#000;font-weight:700;font-size:24px;}
-  .btn-sci{background:#1c1c1e;border:1px solid #3a3a3a;border-radius:12px;}
-  .btn-sci span{color:#F7C948;font-size:13px;}
-  .btn-op.active{background:#fff;}
-  .btn-op.active span{color:#F7C948;}
+  .btn-fn{background:#a5a5a5;color:#000;font-size:18px;}
+  .btn-op{background:#F7C948;color:#000;font-weight:700;font-size:26px;}
+  .btn-sci{background:#1c1c1e;border:1px solid #3a3a3a;color:#F7C948;font-size:13px;border-radius:12px;}
+  .btn-op.active{background:#fff;color:#F7C948;}
 
-  /* ZERO BUTTON */
   .btn-zero{
     border-radius:999px;
     grid-column:span 2;
-    height:auto;
-    padding-bottom:0;
-    min-height:0;
-  }
-  .btn-zero .zero-inner{
-    display:flex;
-    align-items:center;
     justify-content:flex-start;
     padding-left:22px;
     font-size:24px;
-    color:#fff;
-    width:100%;
-    height:100%;
-    position:static;
   }
 
   .sci-only{display:none;}
-  .sci-mode .sci-only{display:block;}
-  .sci-mode .btn span{font-size:17px;}
-  .sci-mode .btn-zero .zero-inner{font-size:17px;padding-left:14px;}
-  .sci-mode .btn-fn span{font-size:15px;}
+  .sci-mode .sci-only{display:flex;}
+  .sci-mode .btn{font-size:17px;border-radius:14px;}
+  .sci-mode .btn-fn{font-size:14px;}
+  .sci-mode .btn-zero{font-size:17px;padding-left:14px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <!-- TOP BAR -->
-  <div class="topbar">
+  <div class="topbar" id="topbar">
     <div class="mode-btn active" id="btnBasic" onclick="setMode('basic')">Basic</div>
     <div class="mode-btn" id="btnSci" onclick="setMode('sci')">Scientific</div>
     <div class="hist-btn" id="histToggle" onclick="openHistory()">⏱ History</div>
@@ -132,63 +115,61 @@
   </div>
 
   <!-- DISPLAY -->
-  <div class="display">
+  <div class="display" id="display">
     <div class="expr-line" id="exprLine"></div>
     <div class="result-line" id="resultLine">0</div>
   </div>
 
   <!-- BUTTONS -->
-  <div class="buttons basic-mode" id="btnGrid">
+  <div class="buttons" id="btnGrid">
 
     <!-- Sci row 1 -->
-    <button class="btn btn-sci sci-only" onclick="pressSci('sin')"><span>sin</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('cos')"><span>cos</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('tan')"><span>tan</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('log')"><span>log</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('ln')"><span>ln</span></button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('sin')">sin</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('cos')">cos</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('tan')">tan</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('log')">log</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('ln')">ln</button>
 
     <!-- Sci row 2 -->
-    <button class="btn btn-sci sci-only" onclick="pressSci('sqrt')"><span>√</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('sq')"><span>x²</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('pow')"><span>xʸ</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('pi')"><span>π</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('e')"><span>e</span></button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('sqrt')">√</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('sq')">x²</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('pow')">xʸ</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('pi')">π</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('e')">e</button>
 
     <!-- Row 1 -->
-    <button class="btn btn-fn" id="acBtn" onclick="pressAC()"><span>AC</span></button>
-    <button class="btn btn-fn" onclick="pressToggle()"><span>+/-</span></button>
-    <button class="btn btn-fn" onclick="pressPercent()"><span>%</span></button>
-    <button class="btn btn-op" id="opDiv" onclick="pressOp('÷')"><span>÷</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('inv')"><span>1/x</span></button>
+    <button class="btn btn-fn" id="acBtn" onclick="pressAC()">AC</button>
+    <button class="btn btn-fn" onclick="pressToggle()">+/-</button>
+    <button class="btn btn-fn" onclick="pressPercent()">%</button>
+    <button class="btn btn-op" id="opDiv" onclick="pressOp('÷')">÷</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('inv')">1/x</button>
 
     <!-- Row 2 -->
-    <button class="btn btn-num" onclick="pressNum('7')"><span>7</span></button>
-    <button class="btn btn-num" onclick="pressNum('8')"><span>8</span></button>
-    <button class="btn btn-num" onclick="pressNum('9')"><span>9</span></button>
-    <button class="btn btn-op" id="opMul" onclick="pressOp('×')"><span>×</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('fact')"><span>n!</span></button>
+    <button class="btn btn-num" onclick="pressNum('7')">7</button>
+    <button class="btn btn-num" onclick="pressNum('8')">8</button>
+    <button class="btn btn-num" onclick="pressNum('9')">9</button>
+    <button class="btn btn-op" id="opMul" onclick="pressOp('×')">×</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('fact')">n!</button>
 
     <!-- Row 3 -->
-    <button class="btn btn-num" onclick="pressNum('4')"><span>4</span></button>
-    <button class="btn btn-num" onclick="pressNum('5')"><span>5</span></button>
-    <button class="btn btn-num" onclick="pressNum('6')"><span>6</span></button>
-    <button class="btn btn-op" id="opSub" onclick="pressOp('−')"><span>−</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressSci('abs')"><span>|x|</span></button>
+    <button class="btn btn-num" onclick="pressNum('4')">4</button>
+    <button class="btn btn-num" onclick="pressNum('5')">5</button>
+    <button class="btn btn-num" onclick="pressNum('6')">6</button>
+    <button class="btn btn-op" id="opSub" onclick="pressOp('−')">−</button>
+    <button class="btn btn-sci sci-only" onclick="pressSci('abs')">|x|</button>
 
     <!-- Row 4 -->
-    <button class="btn btn-num" onclick="pressNum('1')"><span>1</span></button>
-    <button class="btn btn-num" onclick="pressNum('2')"><span>2</span></button>
-    <button class="btn btn-num" onclick="pressNum('3')"><span>3</span></button>
-    <button class="btn btn-op" id="opAdd" onclick="pressOp('+')"><span>+</span></button>
-    <button class="btn btn-sci sci-only" onclick="pressDel()"><span>⌫</span></button>
+    <button class="btn btn-num" onclick="pressNum('1')">1</button>
+    <button class="btn btn-num" onclick="pressNum('2')">2</button>
+    <button class="btn btn-num" onclick="pressNum('3')">3</button>
+    <button class="btn btn-op" id="opAdd" onclick="pressOp('+')">+</button>
+    <button class="btn btn-sci sci-only" onclick="pressDel()">⌫</button>
 
     <!-- Row 5 -->
-    <button class="btn btn-num btn-zero" onclick="pressNum('0')">
-      <div class="zero-inner">0</div>
-    </button>
-    <button class="btn btn-num" onclick="pressDot()"><span>.</span></button>
-    <button class="btn btn-op" onclick="pressEquals()"><span>=</span></button>
-    <button class="btn btn-sci sci-only" style="visibility:hidden"><span></span></button>
+    <button class="btn btn-num btn-zero" onclick="pressNum('0')">0</button>
+    <button class="btn btn-num" onclick="pressDot()">.</button>
+    <button class="btn btn-op" onclick="pressEquals()">=</button>
+    <button class="btn btn-sci sci-only" style="visibility:hidden"></button>
 
   </div>
 </div>
@@ -203,10 +184,26 @@ const exprEl=document.getElementById('exprLine');
 const acBtn=document.getElementById('acBtn');
 const opIds={'÷':'opDiv','×':'opMul','−':'opSub','+':'opAdd'};
 
+// Calculate button size from available height
+function calcLayout(){
+  const totalH = window.innerHeight;
+  const topH = document.getElementById('topbar').offsetHeight;
+  const dispH = document.getElementById('display').offsetHeight;
+  const GAP = 8;
+  const ROWS = 5;
+  const PADV = 14; // top+bottom padding of grid
+  const available = totalH - topH - dispH - PADV - (GAP*(ROWS-1));
+  const btnH = Math.floor(available / ROWS);
+  document.documentElement.style.setProperty('--bh', btnH+'px');
+  document.documentElement.style.setProperty('--gap', GAP+'px');
+}
+
 function setMode(m){
   document.getElementById('btnBasic').classList.toggle('active',m==='basic');
   document.getElementById('btnSci').classList.toggle('active',m==='sci');
-  document.getElementById('btnGrid').className='buttons '+(m==='sci'?'sci-mode':'basic-mode');
+  const grid=document.getElementById('btnGrid');
+  grid.className='buttons'+(m==='sci'?' sci-mode':'');
+  setTimeout(calcLayout,50);
 }
 
 function openHistory(){
@@ -231,15 +228,12 @@ function addHistory(expr,result){
   try{localStorage.setItem('ch',JSON.stringify(history));}catch(e){}
 }
 function clearHistory(){
-  history=[];
-  try{localStorage.removeItem('ch');}catch(e){}
+  history=[];try{localStorage.removeItem('ch');}catch(e){}
   renderHistory();
 }
 function useHistory(i){
-  current=history[i].result;
-  justEvaled=true;
-  updateDisplay();
-  closeHistory();
+  current=history[i].result;justEvaled=true;
+  updateDisplay();closeHistory();
 }
 
 function updateDisplay(expr){
@@ -247,7 +241,7 @@ function updateDisplay(expr){
   const l=current.length;
   resultEl.className='result-line'+(l>10?' xs':l>7?' sm':'');
   if(expr!==undefined)exprEl.textContent=expr;
-  acBtn.querySelector('span').textContent=(current!=='0'||firstOp!==null)?'C':'AC';
+  acBtn.textContent=(current!=='0'||firstOp!==null)?'C':'AC';
   Object.entries(opIds).forEach(([op,id])=>{
     document.getElementById(id).classList.toggle('active',pendingOp===op&&!justEvaled);
   });
@@ -264,21 +258,17 @@ function pressDot(){
   updateDisplay();
 }
 function pressDel(){
-  current=current.length>1?current.slice(0,-1):'0';
-  updateDisplay();
+  current=current.length>1?current.slice(0,-1):'0';updateDisplay();
 }
 function pressAC(){
   current='0';firstOp=null;pendingOp=null;justEvaled=false;powPending=false;
   updateDisplay('');
 }
 function pressToggle(){
-  const v=parseFloat(current);
-  if(v!==0)current=fmt(-v);
-  updateDisplay();
+  const v=parseFloat(current);if(v!==0)current=fmt(-v);updateDisplay();
 }
 function pressPercent(){
-  current=fmt(parseFloat(current)/100);
-  updateDisplay();
+  current=fmt(parseFloat(current)/100);updateDisplay();
 }
 function pressOp(op){
   justEvaled=false;
@@ -288,18 +278,15 @@ function pressOp(op){
   }else{firstOp=parseFloat(current);}
   pendingOp=op;powPending=false;
   exprEl.textContent=fmt(firstOp)+' '+op;
-  justEvaled=true;
-  updateDisplay();
+  justEvaled=true;updateDisplay();
 }
 function pressEquals(){
   if(firstOp===null||pendingOp===null)return;
   const b=parseFloat(current);
   const res=compute(firstOp,b,pendingOp);
-  const expr=fmt(firstOp)+' '+pendingOp+' '+fmt(b)+' =';
   addHistory(fmt(firstOp)+' '+pendingOp+' '+fmt(b),fmt(res));
-  current=fmt(res);
-  firstOp=null;pendingOp=null;justEvaled=true;powPending=false;
-  updateDisplay(expr);
+  current=fmt(res);firstOp=null;pendingOp=null;justEvaled=true;powPending=false;
+  updateDisplay(fmt(firstOp)+' '+pendingOp+' '+fmt(b)+' =');
 }
 function pressSci(fn){
   const v=parseFloat(current);let res;
@@ -339,16 +326,8 @@ function fmt(n){
   return parseFloat(n.toPrecision(10)).toString();
 }
 
-// Fix row 5 height equal to other rows
-window.addEventListener('load',()=>{
-  const grid=document.getElementById('btnGrid');
-  const btns=grid.querySelectorAll('.btn:not(.btn-zero):not(.sci-only)');
-  if(btns.length){
-    const h=btns[0].offsetWidth;
-    document.querySelector('.btn-zero').style.height=h+'px';
-  }
-});
-
+window.addEventListener('load',()=>{setTimeout(calcLayout,100);});
+window.addEventListener('resize',calcLayout);
 updateDisplay('');
 </script>
 </body>
