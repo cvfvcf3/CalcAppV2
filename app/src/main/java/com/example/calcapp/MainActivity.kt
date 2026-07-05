@@ -12,6 +12,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(webView)
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
+        webView.settings.loadWithOverviewMode = true
+        webView.settings.useWideViewPort = true
+        webView.settings.setSupportZoom(false)
+        webView.settings.builtInZoomControls = false
+        webView.settings.displayZoomControls = false
         webView.webViewClient = WebViewClient()
         webView.loadUrl("file:///android_asset/calculator.html")
     }
