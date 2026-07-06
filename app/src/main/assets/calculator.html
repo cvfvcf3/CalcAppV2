@@ -85,10 +85,9 @@
   .btn-op{background:#F7C948;color:#000;font-weight:700;}
   .btn-op.active{background:#fff;color:#F7C948;}
   .btn-sci{background:#1c1c1e;border:1px solid #3a3a3a;color:#F7C948;border-radius:14px;}
-  .btn-mem{background:none;border:none;color:#4A9EFF;font-size:var(--mfs,15px);font-weight:500;cursor:pointer;flex:1;height:var(--bh,60px);display:flex;align-items:center;justify-content:center;}
-  .btn-mem:active{background:rgba(74,158,255,0.1);border-radius:10px;}
-  .btn-mem.dim{color:#2a2a2a;}
-
+.btn-mem{background:#a5a5a5;border:none;color:#000;font-size:var(--mfs,15px);font-weight:500;cursor:pointer;flex:1;height:var(--bh,60px);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .btn-mem:active{filter:brightness(1.6);transform:scale(0.91);}
+  .btn-mem.dim{background:#3a3a3a;color:#666;}
   .btn-zero{
     border-radius:999px;flex:2.1;
     justify-content:flex-start;
@@ -212,29 +211,27 @@ let isSci=false;
 
 // ── LAYOUT CALC ──
 function calcLayout(){
+function calcLayout(){
   const totalH=window.innerHeight;
   const topbarH=document.querySelector('.topbar').offsetHeight;
-  const resultH=document.querySelector('.result-wrap').offsetHeight;
-  const memH=36; // memory row fixed height
-  const ROWS=isSci?7:5; // sci: mem+2sci+5btn, basic: mem(not counted)+5btn
-  const TOTAL_ROWS=isSci?7:5;
-  const GAP=isSci?6:9;
+  const GAP=9;
   const PAD=16;
+  const ROWS=5;
+  const memH=44;
 
-  // available for buttons
-  const exprH=totalH-topbarH-resultH-PAD;
-  const btnAvail=exprH*0.62; // 62% for buttons
-  const btnH=Math.floor((btnAvail - memH - (TOTAL_ROWS-1)*GAP) / TOTAL_ROWS);
-  const safeH=Math.max(Math.min(btnH,78),isSci?38:44);
+  // button size = column width (screen / 4 cols)
+  const colW=Math.floor((totalH*0.99 - topbarH - memH - PAD - (ROWS-1)*GAP) / ROWS);
+  const maxW=Math.floor((window.innerWidth - 20 - 3*GAP) / 4);
+  const safeH=Math.min(colW, maxW, 82);
 
-  const bfs=Math.max(Math.floor(safeH*0.38),12);
+  const bfs=Math.max(Math.floor(safeH*0.38),14);
   document.documentElement.style.setProperty('--bh',safeH+'px');
   document.documentElement.style.setProperty('--bfs',bfs+'px');
   document.documentElement.style.setProperty('--gap',GAP+'px');
-  document.documentElement.style.setProperty('--zpl',Math.floor(safeH*0.3)+'px');
-  document.documentElement.style.setProperty('--mfs',(isSci?13:15)+'px');
+  document.documentElement.style.setProperty('--zpl',Math.floor(safeH*0.32)+'px');
+  document.documentElement.style.setProperty('--mfs','15px');
   document.getElementById('memRow').style.height=memH+'px';
-}
+                        }
 
 // ── MODE ──
 function setMode(m){
